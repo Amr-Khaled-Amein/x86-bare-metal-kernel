@@ -84,6 +84,22 @@ void split_filename_and_content(const char *source, char *filename, char *conten
     content[j] = '\0';
 }
 
+unsigned int parse_number(const char *text) {
+    unsigned int value = 0;
+    int i = 0;
+
+    while (text[i] == ' ') {
+        i++;
+    }
+
+    while (text[i] >= '0' && text[i] <= '9') {
+        value = value * 10 + (text[i] - '0');
+        i++;
+    }
+
+    return value;
+}
+
 void shell_start() {
     print("MiniOS Shell\n");
     print("Type 'help' to see available commands.\n");
@@ -122,10 +138,11 @@ void shell_handle_command(const char *command) {
         print("about            - Show information about MiniOS\n");
         print("version          - Show MiniOS version\n");
         print("memory           - Show basic memory information\n");
-        print("alloc            - Allocate 64 bytes from kernel heap\n");
-        print("free             - Free latest allocated heap block\n");
-        print("blocks           - Show tracked heap blocks\n");
-        print("heap             - Show heap memory information\n");
+        print("alloc      - Allocate 64 bytes from kernel heap\n");
+        print("alloc N    - Allocate N bytes from kernel heap\n");
+        print("free       - Free latest allocated heap block\n");
+        print("free ID    - Free heap block by ID\n");
+        print("blocks     - Show tracked heap blocks\n");
         print("scheduler-demo   - Show scheduler simulation\n");
         print("syscall-demo     - Show system call simulation\n");
         print("interrupts-demo  - Show interrupt explanation\n");
@@ -160,14 +177,22 @@ void shell_handle_command(const char *command) {
     else if (string_equals(command, "heap")) {
         show_heap_info();
     }
+    else if (string_equals(command, "alloc")) {
+        allocate_demo_block();
+    }
+    else if (starts_with(command, "alloc ")) {
+        unsigned int size = parse_number(command + 6);
+        allocate_custom_block(size);
+    }
     else if (string_equals(command, "free")) {
         free_latest_block();
     }
+    else if (starts_with(command, "free ")) {
+        unsigned int id = parse_number(command + 5);
+        free_block_by_id(id);
+    }
     else if (string_equals(command, "blocks")) {
         show_heap_blocks();
-    }
-    else if (string_equals(command, "alloc")) {
-        allocate_demo_block();
     }
     else if (string_equals(command, "scheduler-demo")) {
         show_scheduler_demo();

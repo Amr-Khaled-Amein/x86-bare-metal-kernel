@@ -71,6 +71,19 @@ void heap_init() {
 }
 
 void *kmalloc(unsigned int size) {
+    if (size == 0) {
+        return 0;
+    }
+
+    // First try to reuse a free block
+    for (unsigned int i = 0; i < block_count; i++) {
+        if (!blocks[i].used && blocks[i].size >= size) {
+            blocks[i].used = 1;
+            return (void *) blocks[i].address;
+        }
+    }
+
+    // Otherwise reserve new heap memory
     if (heap_current + size >= heap_end) {
         return 0;
     }
@@ -94,8 +107,13 @@ void *kmalloc(unsigned int size) {
     return allocated_address;
 }
 
-void allocate_demo_block() {
-    unsigned int size = 64;
+void allocate_custom_block(unsigned int size) {
+    if (size == 0) {
+        print("Usage: alloc SIZE\n");
+        return;
+    }
+
+    unsigned int old_block_count = block_count;
     void *block = kmalloc(size);
 
     if (block == 0) {
@@ -103,11 +121,28 @@ void allocate_demo_block() {
         return;
     }
 
-    print("Allocated block ID ");
-    print_decimal(next_block_id - 1);
-    print(" at address: ");
-    print_hex((unsigned int) block);
-    print("\n");
+    // Check whether this was a reused block
+    for (unsigned int i = 0; i < block_count; i++) {
+        if (blocks[i].address == (unsigned int) block && blocks[i].used) {
+            if (block_count == old_block_count) {
+                print("Reused free block ID ");
+            } else {
+                print("Allocated block ID ");
+            }
+
+            print_decimal(blocks[i].id);
+            print(" at address: ");
+            print_hex(blocks[i].address);
+            print(" (");
+            print_decimal(size);
+            print(" bytes requested)\n");
+            return;
+        }
+    }
+}
+
+void allocate_demo_block() {
+    allocate_custom_block(64);
 }
 
 void free_latest_block() {
@@ -129,6 +164,35 @@ void free_latest_block() {
     }
 
     print("No used blocks to free.\n");
+}
+
+void free_block_by_id(unsigned int id) {
+    if (id == 0) {
+        print("Usage: free ID\n");
+        return;
+    }
+
+    for (unsigned int i = 0; i < block_count; i++) {
+        if (blocks[i].id == id) {
+            if (!blocks[i].used) {
+                print("Block ID ");
+                print_decimal(id);
+                print(" is already free.\n");
+                return;
+            }
+
+            blocks[i].used = 0;
+
+            print("Freed block ID ");
+            print_decimal(id);
+            print(".\n");
+            return;
+        }
+    }
+
+    print("Block ID not found: ");
+    print_decimal(id);
+    print("\n");
 }
 
 void show_heap_blocks() {
@@ -160,11 +224,14 @@ void show_heap_blocks() {
 }
 
 void show_heap_info() {
-    unsigned int used_bytes = 0;
+    unsigned int active_bytes = 0;
+    unsigned int free_tracked_bytes = 0;
 
     for (unsigned int i = 0; i < block_count; i++) {
         if (blocks[i].used) {
-            used_bytes += blocks[i].size;
+            active_bytes += blocks[i].size;
+        } else {
+            free_tracked_bytes += blocks[i].size;
         }
     }
 
@@ -187,7 +254,11 @@ void show_heap_info() {
     print(" bytes\n");
 
     print("Active allocated memory: ");
-    print_decimal(used_bytes);
+    print_decimal(active_bytes);
+    print(" bytes\n");
+
+    print("Reusable freed memory: ");
+    print_decimal(free_tracked_bytes);
     print(" bytes\n");
 
     print("Total reserved memory: ");
