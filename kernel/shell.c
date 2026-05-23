@@ -2,6 +2,7 @@
 #include "vga.h"
 #include "memory.h"
 #include "os_concepts.h"
+#include "heap.h"
 
 int string_equals(const char *a, const char *b) {
     int i = 0;
@@ -31,6 +32,8 @@ void shell_handle_command(const char *command) {
         print("about      - Show information about MiniOS\n");
         print("version    - Show MiniOS version\n");
         print("memory     - Show basic memory information\n");
+        print("heap       - Show heap memory information\n");
+        print("alloc      - Allocate 64 bytes from kernel heap\n");
         print("scheduler  - Show scheduler simulation\n");
         print("syscall    - Show system call simulation\n");
         print("interrupts - Show interrupt explanation\n");
@@ -43,10 +46,16 @@ void shell_handle_command(const char *command) {
         print("It is built in C and Assembly and runs in QEMU.\n");
     }
     else if (string_equals(command, "version")) {
-        print("MiniOS version 0.1\n");
+        print("MiniOS version 0.2\n");
     }
     else if (string_equals(command, "memory")) {
         show_memory_info();
+    }
+    else if (string_equals(command, "heap")) {
+        show_heap_info();
+    }
+    else if (string_equals(command, "alloc")) {
+        allocate_demo_block();
     }
     else if (string_equals(command, "scheduler")) {
         show_scheduler_demo();
