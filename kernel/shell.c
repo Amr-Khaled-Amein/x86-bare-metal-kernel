@@ -7,6 +7,7 @@
 #include "text_buffer.h"
 #include "history.h"
 #include "minifs.h"
+#include "process.h"
 
 int string_equals(const char *a, const char *b) {
     int i = 0;
@@ -138,11 +139,11 @@ void shell_handle_command(const char *command) {
         print("about            - Show information about MiniOS\n");
         print("version          - Show MiniOS version\n");
         print("memory           - Show basic memory information\n");
-        print("alloc      - Allocate 64 bytes from kernel heap\n");
-        print("alloc N    - Allocate N bytes from kernel heap\n");
-        print("free       - Free latest allocated heap block\n");
-        print("free ID    - Free heap block by ID\n");
-        print("blocks     - Show tracked heap blocks\n");
+        print("alloc            - Allocate 64 bytes from kernel heap\n");
+        print("alloc N          - Allocate N bytes from kernel heap\n");
+        print("free             - Free latest allocated heap block\n");
+        print("free ID          - Free heap block by ID\n");
+        print("blocks           - Show tracked heap blocks\n");
         print("scheduler-demo   - Show scheduler simulation\n");
         print("syscall-demo     - Show system call simulation\n");
         print("interrupts-demo  - Show interrupt explanation\n");
@@ -160,6 +161,9 @@ void shell_handle_command(const char *command) {
         print("cat NAME         - Read a file\n");
         print("rm NAME          - Delete a file\n");
         print("fsinfo           - Show MiniFS information\n");
+        print("ps               - Show process table\n");
+        print("run NAME         - Start process: counter or logger\n");
+        print("kill PID         - Kill process by PID\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -257,6 +261,18 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "fsinfo")) {
         fs_info();
+    }
+    else if (string_equals(command, "ps")) {
+        process_list();
+    }
+    else if (starts_with(command, "run ")) {
+        char process_name[32];
+        copy_argument(command + 4, process_name, 32);
+        process_run(process_name);
+    }
+    else if (starts_with(command, "kill ")) {
+        unsigned int pid = parse_number(command + 5);
+        process_kill(pid);
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing

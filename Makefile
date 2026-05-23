@@ -49,8 +49,11 @@ build/history.o: kernel/history.c
 build/minifs.o: kernel/minifs.c
 	$(CC) $(CFLAGS) -c kernel/minifs.c -o build/minifs.o
 
-build/kernel.bin: build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o
-	$(LD) $(LDFLAGS) build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o -o build/kernel.bin
+build/process.o: kernel/process.c
+	$(CC) $(CFLAGS) -c kernel/process.c -o build/process.o
+
+build/kernel.bin: build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o build/process.o
+	$(LD) $(LDFLAGS) build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o build/process.o -o build/kernel.bin
 
 run: all
 	qemu-system-i386 -kernel build/kernel.bin

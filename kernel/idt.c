@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "vga.h"
 #include "ports.h"
+#include "process.h"
 
 #define IDT_ENTRIES 256
 
@@ -107,6 +108,11 @@ void syscall_interrupt_handler() {
 
 void timer_interrupt_handler() {
     timer_ticks++;
+
+    if (timer_ticks % 100 == 0) {
+        process_tick();
+    }
+
     outb(PIC1_COMMAND, 0x20);
 }
 

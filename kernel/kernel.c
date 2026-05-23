@@ -4,12 +4,14 @@
 #include "heap.h"
 #include "idt.h"
 #include "minifs.h"
+#include "process.h"
 
 void kernel_main() {
     clear_screen();
     heap_init();
     minifs_init();
     idt_init();
+    process_init();
 
     print("========================================\n");
     print("              MiniOS\n");
@@ -29,6 +31,7 @@ void kernel_main() {
     print("Keyboard: IRQ1 interrupt-driven input enabled\n");
     print("MiniFS: In-memory file system initialized\n");
     print("Scrollback: Page Up / Page Down enabled\n");
+    print("Process Manager: Process table initialized\n");
     print("\n");
     print("----------------------------------------\n");
     print("System initialization complete.\n");
