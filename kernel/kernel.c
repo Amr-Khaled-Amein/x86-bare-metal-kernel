@@ -23,6 +23,7 @@ void kernel_main() {
     print("Shell: Basic command handling enabled\n");
     print("Heap: Simple kernel heap initialized\n");
     print("IDT: Interrupt Descriptor Table initialized\n");
+    print("Timer: PIT timer interrupt enabled\n");
     print("\n");
     print("----------------------------------------\n");
     print("System initialization complete.\n");

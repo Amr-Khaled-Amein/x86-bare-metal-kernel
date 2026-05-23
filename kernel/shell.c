@@ -25,6 +25,26 @@ void shell_start() {
     print("MiniOS> ");
 }
 
+void print_number(unsigned int value) {
+    char buffer[16];
+    int i = 0;
+
+    if (value == 0) {
+        print_char('0');
+        return;
+    }
+
+    while (value > 0) {
+        buffer[i] = '0' + (value % 10);
+        value = value / 10;
+        i++;
+    }
+
+    for (int j = i - 1; j >= 0; j--) {
+        print_char(buffer[j]);
+    }
+}
+
 void shell_handle_command(const char *command) {
     if (string_equals(command, "help")) {
         print("Available commands:\n");
@@ -39,6 +59,7 @@ void shell_handle_command(const char *command) {
         print("syscall    - Show system call simulation\n");
         print("interrupts - Show interrupt explanation\n");
         print("int80      - Trigger software interrupt 0x80\n");
+        print("ticks      - Show system timer ticks\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -71,6 +92,11 @@ void shell_handle_command(const char *command) {
     else if (string_equals(command, "int80")) {
         print("Triggering interrupt 0x80...\n");
         trigger_syscall_interrupt();
+    }
+    else if (string_equals(command, "ticks")) {
+        print("System ticks: ");
+        print_number(get_timer_ticks());
+        print("\n");
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing
