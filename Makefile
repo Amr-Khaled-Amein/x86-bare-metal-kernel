@@ -16,8 +16,14 @@ build/kernel.o: kernel/kernel.c
 build/vga.o: kernel/vga.c
 	$(CC) $(CFLAGS) -c kernel/vga.c -o build/vga.o
 
-build/kernel.bin: build/boot.o build/kernel.o build/vga.o
-	$(LD) $(LDFLAGS) build/boot.o build/kernel.o build/vga.o -o build/kernel.bin
+build/ports.o: kernel/ports.c
+	$(CC) $(CFLAGS) -c kernel/ports.c -o build/ports.o
+
+build/keyboard.o: kernel/keyboard.c
+	$(CC) $(CFLAGS) -c kernel/keyboard.c -o build/keyboard.o
+
+build/kernel.bin: build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o
+	$(LD) $(LDFLAGS) build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o -o build/kernel.bin
 
 run: all
 	qemu-system-i386 -kernel build/kernel.bin

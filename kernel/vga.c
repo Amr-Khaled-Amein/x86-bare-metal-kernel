@@ -29,24 +29,43 @@ void print_newline() {
     }
 }
 
-void print(const char *message) {
+void print_char(char c) {
     char *video_memory = (char *) VGA_MEMORY;
 
-    for (int i = 0; message[i] != '\0'; i++) {
-        if (message[i] == '\n') {
-            print_newline();
-            continue;
-        }
-
-        int index = (cursor_row * VGA_WIDTH + cursor_col) * 2;
-
-        video_memory[index] = message[i];
-        video_memory[index + 1] = text_color;
-
-        cursor_col++;
-
-        if (cursor_col >= VGA_WIDTH) {
-            print_newline();
-        }
+    if (c == '\n') {
+        print_newline();
+        return;
     }
+
+    int index = (cursor_row * VGA_WIDTH + cursor_col) * 2;
+
+    video_memory[index] = c;
+    video_memory[index + 1] = text_color;
+
+    cursor_col++;
+
+    if (cursor_col >= VGA_WIDTH) {
+        print_newline();
+    }
+}
+
+void print(const char *message) {
+    for (int i = 0; message[i] != '\0'; i++) {
+        print_char(message[i]);
+    }
+}
+
+void vga_backspace() {
+    char *video_memory = (char *) VGA_MEMORY;
+
+    if (cursor_col > 0) {
+        cursor_col--;
+    } else if (cursor_row > 0) {
+        cursor_row--;
+        cursor_col = VGA_WIDTH - 1;
+    }
+
+    int index = (cursor_row * VGA_WIDTH + cursor_col) * 2;
+    video_memory[index] = ' ';
+    video_memory[index + 1] = text_color;
 }

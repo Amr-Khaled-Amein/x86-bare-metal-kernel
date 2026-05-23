@@ -1,4 +1,5 @@
 #include "vga.h"
+#include "keyboard.h"
 
 void kernel_main() {
     clear_screen();
@@ -12,13 +13,15 @@ void kernel_main() {
     print("Status: Boot successful\n");
     print("Mode: 32-bit protected mode\n");
     print("Display: VGA text mode working\n");
-    print("Environment: QEMU emulator\n");
+    print("Keyboard: PS/2 keyboard polling enabled\n");
     print("\n");
     print("----------------------------------------\n");
-    print("System initialization complete.\n");
+    print("Type on the keyboard. MiniOS will echo it.\n");
     print("----------------------------------------\n");
     print("\n");
-    print("Next step: keyboard input and shell\n");
+    print("MiniOS> ");
+
+    keyboard_loop();
 
     while (1) {
     }
