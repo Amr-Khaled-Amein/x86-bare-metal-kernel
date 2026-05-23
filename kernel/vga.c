@@ -20,12 +20,39 @@ void clear_screen() {
     cursor_col = 0;
 }
 
+void scroll_screen() {
+    char *video_memory = (char *) VGA_MEMORY;
+
+    // Move every line one row up
+    for (int row = 1; row < VGA_HEIGHT; row++) {
+        for (int col = 0; col < VGA_WIDTH; col++) {
+            int from = (row * VGA_WIDTH + col) * 2;
+            int to = ((row - 1) * VGA_WIDTH + col) * 2;
+
+            video_memory[to] = video_memory[from];
+            video_memory[to + 1] = video_memory[from + 1];
+        }
+    }
+
+    // Clear the last line
+    int last_row = VGA_HEIGHT - 1;
+
+    for (int col = 0; col < VGA_WIDTH; col++) {
+        int index = (last_row * VGA_WIDTH + col) * 2;
+        video_memory[index] = ' ';
+        video_memory[index + 1] = text_color;
+    }
+
+    cursor_row = VGA_HEIGHT - 1;
+    cursor_col = 0;
+}
+
 void print_newline() {
     cursor_col = 0;
     cursor_row++;
 
     if (cursor_row >= VGA_HEIGHT) {
-        cursor_row = 0;
+        scroll_screen();
     }
 }
 

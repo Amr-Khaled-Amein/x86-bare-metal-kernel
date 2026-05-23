@@ -1,5 +1,6 @@
 #include "vga.h"
 #include "keyboard.h"
+#include "shell.h"
 
 void kernel_main() {
     clear_screen();
@@ -14,12 +15,14 @@ void kernel_main() {
     print("Mode: 32-bit protected mode\n");
     print("Display: VGA text mode working\n");
     print("Keyboard: PS/2 keyboard polling enabled\n");
+    print("Shell: Basic command handling enabled\n");
     print("\n");
     print("----------------------------------------\n");
-    print("Type on the keyboard. MiniOS will echo it.\n");
+    print("System initialization complete.\n");
     print("----------------------------------------\n");
     print("\n");
-    print("MiniOS> ");
+
+    shell_start();
 
     keyboard_loop();
 

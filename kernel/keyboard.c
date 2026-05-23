@@ -1,12 +1,15 @@
 #include "keyboard.h"
 #include "ports.h"
 #include "vga.h"
+#include "shell.h"
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
+#define INPUT_BUFFER_SIZE 128
 
 static int shift_pressed = 0;
 static int input_length = 0;
+static char input_buffer[INPUT_BUFFER_SIZE];
 
 static char scancode_to_ascii[128] = {
     0,  27, '1', '2', '3', '4', '5', '6',
@@ -78,14 +81,20 @@ void keyboard_loop() {
                 if (input_length > 0) {
                     vga_backspace();
                     input_length--;
+                    input_buffer[input_length] = '\0';
                 }
                 continue;
             }
 
             if (key == '\n') {
                 print_newline();
-                print("MiniOS> ");
+
+                input_buffer[input_length] = '\0';
+                shell_handle_command(input_buffer);
+
                 input_length = 0;
+                input_buffer[0] = '\0';
+
                 continue;
             }
 
@@ -94,8 +103,12 @@ void keyboard_loop() {
                     key = apply_shift(key);
                 }
 
-                print_char(key);
-                input_length++;
+                if (input_length < INPUT_BUFFER_SIZE - 1) {
+                    print_char(key);
+                    input_buffer[input_length] = key;
+                    input_length++;
+                    input_buffer[input_length] = '\0';
+                }
             }
         }
     }
