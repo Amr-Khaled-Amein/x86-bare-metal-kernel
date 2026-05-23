@@ -58,8 +58,10 @@ void shell_handle_command(const char *command) {
         print("about      - Show information about MiniOS\n");
         print("version    - Show MiniOS version\n");
         print("memory     - Show basic memory information\n");
-        print("heap       - Show heap memory information\n");
         print("alloc      - Allocate 64 bytes from kernel heap\n");
+        print("free       - Free latest allocated heap block\n");
+        print("blocks     - Show tracked heap blocks\n");
+        print("heap       - Show heap memory information\n");
         print("scheduler  - Show scheduler simulation\n");
         print("syscall    - Show system call simulation\n");
         print("interrupts - Show interrupt explanation\n");
@@ -71,6 +73,7 @@ void shell_handle_command(const char *command) {
         print("clearbuf   - Clear saved RAM text buffer\n");
         print("bufinfo    - Show RAM text buffer information\n");
         print("history    - Show command history\n");
+
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -87,6 +90,12 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "heap")) {
         show_heap_info();
+    }
+    else if (string_equals(command, "free")) {
+        free_latest_block();
+    }
+    else if (string_equals(command, "blocks")) {
+        show_heap_blocks();
     }
     else if (string_equals(command, "alloc")) {
         allocate_demo_block();
