@@ -23,7 +23,6 @@ void clear_screen() {
 void scroll_screen() {
     char *video_memory = (char *) VGA_MEMORY;
 
-    // Move every line one row up
     for (int row = 1; row < VGA_HEIGHT; row++) {
         for (int col = 0; col < VGA_WIDTH; col++) {
             int from = (row * VGA_WIDTH + col) * 2;
@@ -34,7 +33,6 @@ void scroll_screen() {
         }
     }
 
-    // Clear the last line
     int last_row = VGA_HEIGHT - 1;
 
     for (int col = 0; col < VGA_WIDTH; col++) {
@@ -56,7 +54,7 @@ void print_newline() {
     }
 }
 
-void print_char(char c) {
+void print_char_colored(char c, unsigned char color) {
     char *video_memory = (char *) VGA_MEMORY;
 
     if (c == '\n') {
@@ -67,7 +65,7 @@ void print_char(char c) {
     int index = (cursor_row * VGA_WIDTH + cursor_col) * 2;
 
     video_memory[index] = c;
-    video_memory[index + 1] = text_color;
+    video_memory[index + 1] = color;
 
     cursor_col++;
 
@@ -76,10 +74,18 @@ void print_char(char c) {
     }
 }
 
-void print(const char *message) {
+void print_char(char c) {
+    print_char_colored(c, text_color);
+}
+
+void print_colored(const char *message, unsigned char color) {
     for (int i = 0; message[i] != '\0'; i++) {
-        print_char(message[i]);
+        print_char_colored(message[i], color);
     }
+}
+
+void print(const char *message) {
+    print_colored(message, text_color);
 }
 
 void vga_backspace() {

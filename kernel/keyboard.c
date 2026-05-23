@@ -185,7 +185,7 @@ void process_scancode(unsigned char scancode) {
 
         if (text_buffer_is_editing()) {
             text_buffer_handle_input(input_buffer);
-            print("MiniOS> ");
+            print_colored("MiniOS> ", 0x0A);
         } else {
             shell_handle_command(input_buffer);
             history_reset_navigation();

@@ -3,11 +3,13 @@
 #include "shell.h"
 #include "heap.h"
 #include "idt.h"
+#include "minifs.h"
 
 void kernel_main() {
     clear_screen();
 
     heap_init();
+    minifs_init();
     idt_init();
 
     print("========================================\n");
@@ -26,6 +28,7 @@ void kernel_main() {
     print("Timer: PIT timer interrupt enabled\n");
     print("RAM App: Text buffer application available\n");
     print("Keyboard: IRQ1 interrupt-driven input enabled\n");
+    print("MiniFS: In-memory file system initialized\n");
     print("\n");
     print("----------------------------------------\n");
     print("System initialization complete.\n");

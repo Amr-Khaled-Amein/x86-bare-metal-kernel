@@ -6,6 +6,7 @@
 #include "idt.h"
 #include "text_buffer.h"
 #include "history.h"
+#include "minifs.h"
 
 int string_equals(const char *a, const char *b) {
     int i = 0;
@@ -20,11 +21,74 @@ int string_equals(const char *a, const char *b) {
     return a[i] == '\0' && b[i] == '\0';
 }
 
+int starts_with(const char *text, const char *prefix) {
+    int i = 0;
+
+    while (prefix[i] != '\0') {
+        if (text[i] != prefix[i]) {
+            return 0;
+        }
+        i++;
+    }
+
+    return 1;
+}
+
+void copy_argument(const char *source, char *destination, int max_size) {
+    int i = 0;
+
+    while (source[i] == ' ') {
+        i++;
+    }
+
+    int j = 0;
+
+    while (source[i] != '\0' && source[i] != ' ' && j < max_size - 1) {
+        destination[j] = source[i];
+        i++;
+        j++;
+    }
+
+    destination[j] = '\0';
+}
+
+void split_filename_and_content(const char *source, char *filename, char *content) {
+    int i = 0;
+
+    while (source[i] == ' ') {
+        i++;
+    }
+
+    int j = 0;
+
+    while (source[i] != '\0' && source[i] != ' ' && j < 31) {
+        filename[j] = source[i];
+        i++;
+        j++;
+    }
+
+    filename[j] = '\0';
+
+    while (source[i] == ' ') {
+        i++;
+    }
+
+    j = 0;
+
+    while (source[i] != '\0' && j < 255) {
+        content[j] = source[i];
+        i++;
+        j++;
+    }
+
+    content[j] = '\0';
+}
+
 void shell_start() {
     print("MiniOS Shell\n");
     print("Type 'help' to see available commands.\n");
     print("\n");
-    print("MiniOS> ");
+    print_colored("MiniOS> ", 0x0A);
 }
 
 void print_number(unsigned int value) {
@@ -53,27 +117,32 @@ void shell_handle_command(const char *command) {
     }
     if (string_equals(command, "help")) {
         print("Available commands:\n");
-        print("help       - Show available commands\n");
-        print("clear      - Clear the screen\n");
-        print("about      - Show information about MiniOS\n");
-        print("version    - Show MiniOS version\n");
-        print("memory     - Show basic memory information\n");
-        print("alloc      - Allocate 64 bytes from kernel heap\n");
-        print("free       - Free latest allocated heap block\n");
-        print("blocks     - Show tracked heap blocks\n");
-        print("heap       - Show heap memory information\n");
-        print("scheduler  - Show scheduler simulation\n");
-        print("syscall    - Show system call simulation\n");
-        print("interrupts - Show interrupt explanation\n");
-        print("int80      - Trigger software interrupt 0x80\n");
-        print("ticks      - Show system timer ticks\n");
-        print("tasks      - Show timer-based task status\n");
-        print("edit       - Write text into RAM buffer\n");
-        print("show       - Show saved RAM text buffer\n");
-        print("clearbuf   - Clear saved RAM text buffer\n");
-        print("bufinfo    - Show RAM text buffer information\n");
-        print("history    - Show command history\n");
-
+        print("help             - Show available commands\n");
+        print("clear            - Clear the screen\n");
+        print("about            - Show information about MiniOS\n");
+        print("version          - Show MiniOS version\n");
+        print("memory           - Show basic memory information\n");
+        print("alloc            - Allocate 64 bytes from kernel heap\n");
+        print("free             - Free latest allocated heap block\n");
+        print("blocks           - Show tracked heap blocks\n");
+        print("heap             - Show heap memory information\n");
+        print("scheduler-demo   - Show scheduler simulation\n");
+        print("syscall-demo     - Show system call simulation\n");
+        print("interrupts-demo  - Show interrupt explanation\n");
+        print("int80            - Trigger software interrupt 0x80\n");
+        print("ticks            - Show system timer ticks\n");
+        print("tasks            - Show timer-based task status\n");
+        print("edit             - Write text into RAM buffer\n");
+        print("show             - Show saved RAM text buffer\n");
+        print("clearbuf         - Clear saved RAM text buffer\n");
+        print("bufinfo          - Show RAM text buffer information\n");
+        print("history          - Show command history\n");
+        print("ls               - List MiniFS files\n");
+        print("touch NAME       - Create a file\n");
+        print("write NAME TEXT  - Write text to a file\n");
+        print("cat NAME         - Read a file\n");
+        print("rm NAME          - Delete a file\n");
+        print("fsinfo           - Show MiniFS information\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -100,13 +169,13 @@ void shell_handle_command(const char *command) {
     else if (string_equals(command, "alloc")) {
         allocate_demo_block();
     }
-    else if (string_equals(command, "scheduler")) {
+    else if (string_equals(command, "scheduler-demo")) {
         show_scheduler_demo();
     }
-    else if (string_equals(command, "syscall")) {
+    else if (string_equals(command, "syscall-demo")) {
         show_syscall_demo();
     }
-    else if (string_equals(command, "interrupts")) {
+    else if (string_equals(command, "interrupts-demo")) {
         show_interrupts_demo();
     }
     else if (string_equals(command, "int80")) {
@@ -136,6 +205,34 @@ void shell_handle_command(const char *command) {
     else if (string_equals(command, "history")) {
         history_show();
     }
+    else if (string_equals(command, "ls")) {
+        fs_list_files();
+    }
+    else if (starts_with(command, "touch ")) {
+        char filename[32];
+        copy_argument(command + 6, filename, 32);
+        fs_create_file(filename);
+    }
+    else if (starts_with(command, "write ")) {
+        char filename[32];
+        char content[256];
+
+        split_filename_and_content(command + 6, filename, content);
+        fs_write_file(filename, content);
+    }
+    else if (starts_with(command, "cat ")) {
+        char filename[32];
+        copy_argument(command + 4, filename, 32);
+        fs_read_file(filename);
+    }
+    else if (starts_with(command, "rm ")) {
+        char filename[32];
+        copy_argument(command + 3, filename, 32);
+        fs_delete_file(filename);
+    }
+    else if (string_equals(command, "fsinfo")) {
+        fs_info();
+    }
     else if (command[0] == '\0') {
         // Empty command: do nothing
     }
@@ -146,5 +243,5 @@ void shell_handle_command(const char *command) {
         print("Type 'help' to see available commands.\n");
     }
 
-    print("MiniOS> ");
+    print_colored("MiniOS> ", 0x0A);
 }
