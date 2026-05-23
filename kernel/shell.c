@@ -4,6 +4,7 @@
 #include "os_concepts.h"
 #include "heap.h"
 #include "idt.h"
+#include "text_buffer.h"
 
 int string_equals(const char *a, const char *b) {
     int i = 0;
@@ -61,6 +62,10 @@ void shell_handle_command(const char *command) {
         print("int80      - Trigger software interrupt 0x80\n");
         print("ticks      - Show system timer ticks\n");
         print("tasks      - Show timer-based task status\n");
+        print("edit       - Write text into RAM buffer\n");
+        print("show       - Show saved RAM text buffer\n");
+        print("clearbuf   - Clear saved RAM text buffer\n");
+        print("bufinfo    - Show RAM text buffer information\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -101,6 +106,18 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "tasks")) {
         show_task_status();
+    }
+    else if (string_equals(command, "edit")) {
+        text_buffer_start_edit();
+    }
+    else if (string_equals(command, "show")) {
+        text_buffer_show();
+    }
+    else if (string_equals(command, "clearbuf")) {
+        text_buffer_clear();
+    }
+    else if (string_equals(command, "bufinfo")) {
+        text_buffer_info();
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing

@@ -40,8 +40,11 @@ build/heap.o: kernel/heap.c
 build/idt.o: kernel/idt.c
 	$(CC) $(CFLAGS) -c kernel/idt.c -o build/idt.o
 
-build/kernel.bin: build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o
-	$(LD) $(LDFLAGS) build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o -o build/kernel.bin
+build/text_buffer.o: kernel/text_buffer.c
+	$(CC) $(CFLAGS) -c kernel/text_buffer.c -o build/text_buffer.o
+
+build/kernel.bin: build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o
+	$(LD) $(LDFLAGS) build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o -o build/kernel.bin
 
 run: all
 	qemu-system-i386 -kernel build/kernel.bin

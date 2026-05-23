@@ -2,6 +2,7 @@
 #include "ports.h"
 #include "vga.h"
 #include "shell.h"
+#include "text_buffer.h"
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
@@ -90,7 +91,13 @@ void keyboard_loop() {
                 print_newline();
 
                 input_buffer[input_length] = '\0';
-                shell_handle_command(input_buffer);
+
+                if (text_buffer_is_editing()) {
+                    text_buffer_handle_input(input_buffer);
+                    print("MiniOS> ");
+                } else {
+                    shell_handle_command(input_buffer);
+                }
 
                 input_length = 0;
                 input_buffer[0] = '\0';
