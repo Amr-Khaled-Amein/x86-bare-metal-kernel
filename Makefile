@@ -28,8 +28,11 @@ build/shell.o: kernel/shell.c
 build/memory.o: kernel/memory.c
 	$(CC) $(CFLAGS) -c kernel/memory.c -o build/memory.o
 
-build/kernel.bin: build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o
-	$(LD) $(LDFLAGS) build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o -o build/kernel.bin
+build/os_concepts.o: kernel/os_concepts.c
+	$(CC) $(CFLAGS) -c kernel/os_concepts.c -o build/os_concepts.o
+
+build/kernel.bin: build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o
+	$(LD) $(LDFLAGS) build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o -o build/kernel.bin
 
 run: all
 	qemu-system-i386 -kernel build/kernel.bin
