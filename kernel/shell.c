@@ -164,6 +164,10 @@ void shell_handle_command(const char *command) {
         print("ps               - Show process table\n");
         print("run NAME         - Start process: counter or logger\n");
         print("kill PID         - Kill process by PID\n");
+        print("run worker       - Start worker process\n");
+        print("starttasks       - Start cooperative scheduler\n");
+        print("stoptasks        - Stop cooperative scheduler\n");
+        print("schedstat        - Show scheduler status\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -273,6 +277,15 @@ void shell_handle_command(const char *command) {
     else if (starts_with(command, "kill ")) {
         unsigned int pid = parse_number(command + 5);
         process_kill(pid);
+    }
+    else if (string_equals(command, "starttasks")) {
+        process_start_scheduler();
+    }
+    else if (string_equals(command, "stoptasks")) {
+        process_stop_scheduler();
+    }
+    else if (string_equals(command, "schedstat")) {
+        process_scheduler_status();
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing
