@@ -1,12 +1,13 @@
+#include "vga.h"
+
 void kernel_main() {
-    char *video_memory = (char *) 0xb8000;
+    clear_screen();
 
-    const char *message = "Welcome to MiniOS";
-
-    for (int i = 0; message[i] != '\0'; i++) {
-        video_memory[i * 2] = message[i];
-        video_memory[i * 2 + 1] = 0x0F;
-    }
+    print("Welcome to MiniOS\n");
+    print("Simple educational kernel project\n");
+    print("\n");
+    print("Status: Boot successful\n");
+    print("Display: VGA text mode working\n");
 
     while (1) {
     }

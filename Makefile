@@ -2,7 +2,7 @@ ASM = nasm
 CC = gcc
 LD = ld
 
-CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector
+CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -nostdinc -Ikernel
 LDFLAGS = -m elf_i386 -T linker.ld
 
 all: build/kernel.bin
@@ -13,8 +13,11 @@ build/boot.o: boot/boot.asm
 build/kernel.o: kernel/kernel.c
 	$(CC) $(CFLAGS) -c kernel/kernel.c -o build/kernel.o
 
-build/kernel.bin: build/boot.o build/kernel.o
-	$(LD) $(LDFLAGS) build/boot.o build/kernel.o -o build/kernel.bin
+build/vga.o: kernel/vga.c
+	$(CC) $(CFLAGS) -c kernel/vga.c -o build/vga.o
+
+build/kernel.bin: build/boot.o build/kernel.o build/vga.o
+	$(LD) $(LDFLAGS) build/boot.o build/kernel.o build/vga.o -o build/kernel.bin
 
 run: all
 	qemu-system-i386 -kernel build/kernel.bin

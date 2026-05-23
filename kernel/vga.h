@@ -1,0 +1,8 @@
+#ifndef VGA_H
+#define VGA_H
+
+void clear_screen();
+void print(const char *message);
+void print_newline();
+
+#endif
