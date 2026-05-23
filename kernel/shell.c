@@ -1,5 +1,6 @@
 #include "shell.h"
 #include "vga.h"
+#include "memory.h"
 
 int string_equals(const char *a, const char *b) {
     int i = 0;
@@ -28,6 +29,7 @@ void shell_handle_command(const char *command) {
         print("clear    - Clear the screen\n");
         print("about    - Show information about MiniOS\n");
         print("version  - Show MiniOS version\n");
+        print("memory   - Show basic memory information\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -38,6 +40,9 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "version")) {
         print("MiniOS version 0.1\n");
+    }
+    else if (string_equals(command, "memory")) {
+        show_memory_info();
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing
