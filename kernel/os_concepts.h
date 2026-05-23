@@ -4,5 +4,6 @@
 void show_scheduler_demo();
 void show_syscall_demo();
 void show_interrupts_demo();
+void show_task_status();
 
 #endif

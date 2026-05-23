@@ -60,6 +60,7 @@ void shell_handle_command(const char *command) {
         print("interrupts - Show interrupt explanation\n");
         print("int80      - Trigger software interrupt 0x80\n");
         print("ticks      - Show system timer ticks\n");
+        print("tasks      - Show timer-based task status\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -97,6 +98,9 @@ void shell_handle_command(const char *command) {
         print("System ticks: ");
         print_number(get_timer_ticks());
         print("\n");
+    }
+    else if (string_equals(command, "tasks")) {
+        show_task_status();
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing
