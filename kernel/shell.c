@@ -3,6 +3,7 @@
 #include "memory.h"
 #include "os_concepts.h"
 #include "heap.h"
+#include "idt.h"
 
 int string_equals(const char *a, const char *b) {
     int i = 0;
@@ -37,6 +38,7 @@ void shell_handle_command(const char *command) {
         print("scheduler  - Show scheduler simulation\n");
         print("syscall    - Show system call simulation\n");
         print("interrupts - Show interrupt explanation\n");
+        print("int80      - Trigger software interrupt 0x80\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -65,6 +67,10 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "interrupts")) {
         show_interrupts_demo();
+    }
+    else if (string_equals(command, "int80")) {
+        print("Triggering interrupt 0x80...\n");
+        trigger_syscall_interrupt();
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing

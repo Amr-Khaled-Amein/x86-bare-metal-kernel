@@ -10,6 +10,9 @@ all: build/kernel.bin
 build/boot.o: boot/boot.asm
 	$(ASM) -f elf32 boot/boot.asm -o build/boot.o
 
+build/interrupt_stubs.o: kernel/interrupt_stubs.asm
+	$(ASM) -f elf32 kernel/interrupt_stubs.asm -o build/interrupt_stubs.o
+
 build/kernel.o: kernel/kernel.c
 	$(CC) $(CFLAGS) -c kernel/kernel.c -o build/kernel.o
 
@@ -34,8 +37,11 @@ build/os_concepts.o: kernel/os_concepts.c
 build/heap.o: kernel/heap.c
 	$(CC) $(CFLAGS) -c kernel/heap.c -o build/heap.o
 
-build/kernel.bin: build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o
-	$(LD) $(LDFLAGS) build/boot.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o -o build/kernel.bin
+build/idt.o: kernel/idt.c
+	$(CC) $(CFLAGS) -c kernel/idt.c -o build/idt.o
+
+build/kernel.bin: build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o
+	$(LD) $(LDFLAGS) build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o -o build/kernel.bin
 
 run: all
 	qemu-system-i386 -kernel build/kernel.bin
