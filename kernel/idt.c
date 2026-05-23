@@ -33,6 +33,7 @@ extern void idt_load(uint32_t idt_ptr_address);
 extern void isr128();
 extern void irq0();
 extern void irq1();
+extern void irq12();
 
 static struct idt_entry idt[IDT_ENTRIES];
 static struct idt_ptr idtp;
@@ -60,10 +61,8 @@ void pic_remap() {
     outb(PIC1_DATA, 0x01);
     outb(PIC2_DATA, 0x01);
 
-    // Enable IRQ0 timer and IRQ1 keyboard
     outb(PIC1_DATA, 0xFC);
 
-    // Disable all IRQs from second PIC for now
     outb(PIC2_DATA, 0xFF);
 }
 
@@ -86,13 +85,8 @@ void idt_init() {
 
     pic_remap();
 
-    // IRQ0 timer = interrupt 32
     idt_set_gate(32, (uint32_t) irq0, 0x08, 0x8E);
-
-    // IRQ1 keyboard = interrupt 33
     idt_set_gate(33, (uint32_t) irq1, 0x08, 0x8E);
-
-    // Software interrupt 0x80
     idt_set_gate(128, (uint32_t) isr128, 0x08, 0x8E);
 
     idt_load((uint32_t) &idtp);

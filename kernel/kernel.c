@@ -7,7 +7,6 @@
 
 void kernel_main() {
     clear_screen();
-
     heap_init();
     minifs_init();
     idt_init();
@@ -29,6 +28,7 @@ void kernel_main() {
     print("RAM App: Text buffer application available\n");
     print("Keyboard: IRQ1 interrupt-driven input enabled\n");
     print("MiniFS: In-memory file system initialized\n");
+    print("Scrollback: Page Up / Page Down enabled\n");
     print("\n");
     print("----------------------------------------\n");
     print("System initialization complete.\n");

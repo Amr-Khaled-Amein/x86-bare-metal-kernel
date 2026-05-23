@@ -62,7 +62,6 @@ void keyboard_interrupt_handler() {
         enqueue_scancode(scancode);
     }
 
-    // Send End of Interrupt signal to PIC
     outb(PIC1_COMMAND, 0x20);
 }
 
@@ -129,6 +128,18 @@ void process_scancode(unsigned char scancode) {
 
     if (extended_scancode) {
         extended_scancode = 0;
+
+        // Page Up
+        if (scancode == 0x49) {
+            vga_scroll_up();
+            return;
+        }
+
+        // Page Down
+        if (scancode == 0x51) {
+            vga_scroll_down();
+            return;
+        }
 
         if (!text_buffer_is_editing()) {
             char history_command[INPUT_BUFFER_SIZE];
@@ -198,6 +209,7 @@ void process_scancode(unsigned char scancode) {
     }
 
     if (key != 0) {
+        vga_follow_bottom();
         if (shift_pressed) {
             key = apply_shift(key);
         }
@@ -215,6 +227,7 @@ void keyboard_loop() {
     unsigned char scancode;
 
     while (1) {
+
         if (dequeue_scancode(&scancode)) {
             process_scancode(scancode);
         } else {

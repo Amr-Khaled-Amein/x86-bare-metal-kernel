@@ -8,5 +8,8 @@ void print_char(char c);
 void print_char_colored(char c, unsigned char color);
 void print_newline();
 void vga_backspace();
+void vga_scroll_up();
+void vga_scroll_down();
+void vga_follow_bottom();
 
 #endif
