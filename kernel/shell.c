@@ -5,6 +5,7 @@
 #include "heap.h"
 #include "idt.h"
 #include "text_buffer.h"
+#include "history.h"
 
 int string_equals(const char *a, const char *b) {
     int i = 0;
@@ -47,6 +48,9 @@ void print_number(unsigned int value) {
 }
 
 void shell_handle_command(const char *command) {
+    if (command[0] != '\0') {
+        history_add(command);
+    }
     if (string_equals(command, "help")) {
         print("Available commands:\n");
         print("help       - Show available commands\n");
@@ -66,6 +70,7 @@ void shell_handle_command(const char *command) {
         print("show       - Show saved RAM text buffer\n");
         print("clearbuf   - Clear saved RAM text buffer\n");
         print("bufinfo    - Show RAM text buffer information\n");
+        print("history    - Show command history\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -118,6 +123,9 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "bufinfo")) {
         text_buffer_info();
+    }
+    else if (string_equals(command, "history")) {
+        history_show();
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing
