@@ -25,6 +25,7 @@ void kernel_main() {
     print("IDT: Interrupt Descriptor Table initialized\n");
     print("Timer: PIT timer interrupt enabled\n");
     print("RAM App: Text buffer application available\n");
+    print("Keyboard: IRQ1 interrupt-driven input enabled\n");
     print("\n");
     print("----------------------------------------\n");
     print("System initialization complete.\n");

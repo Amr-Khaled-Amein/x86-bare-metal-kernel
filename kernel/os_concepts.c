@@ -87,7 +87,7 @@ void show_interrupts_demo() {
     print("An interrupt is a signal that gets the CPU's attention.\n");
     print("Example: keyboard input or timer tick.\n");
     print("\n");
-    print("Current keyboard mode: polling\n");
+    print("Keyboard mode: interrupt-driven IRQ1 input\n");
     print("Timer mode: interrupt-driven PIT timer\n");
     print("Software interrupt: int 0x80 enabled\n");
 }

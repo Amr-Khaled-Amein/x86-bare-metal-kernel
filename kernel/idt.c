@@ -3,10 +3,12 @@
 #include "ports.h"
 
 #define IDT_ENTRIES 256
+
 #define PIC1_COMMAND 0x20
 #define PIC1_DATA    0x21
 #define PIC2_COMMAND 0xA0
 #define PIC2_DATA    0xA1
+
 #define PIT_COMMAND  0x43
 #define PIT_CHANNEL0 0x40
 
@@ -30,6 +32,7 @@ struct idt_ptr {
 extern void idt_load(uint32_t idt_ptr_address);
 extern void isr128();
 extern void irq0();
+extern void irq1();
 
 static struct idt_entry idt[IDT_ENTRIES];
 static struct idt_ptr idtp;
@@ -57,7 +60,10 @@ void pic_remap() {
     outb(PIC1_DATA, 0x01);
     outb(PIC2_DATA, 0x01);
 
-    outb(PIC1_DATA, 0xFE); // Enable IRQ0 only
+    // Enable IRQ0 timer and IRQ1 keyboard
+    outb(PIC1_DATA, 0xFC);
+
+    // Disable all IRQs from second PIC for now
     outb(PIC2_DATA, 0xFF);
 }
 
@@ -80,7 +86,13 @@ void idt_init() {
 
     pic_remap();
 
+    // IRQ0 timer = interrupt 32
     idt_set_gate(32, (uint32_t) irq0, 0x08, 0x8E);
+
+    // IRQ1 keyboard = interrupt 33
+    idt_set_gate(33, (uint32_t) irq1, 0x08, 0x8E);
+
+    // Software interrupt 0x80
     idt_set_gate(128, (uint32_t) isr128, 0x08, 0x8E);
 
     idt_load((uint32_t) &idtp);
@@ -101,8 +113,6 @@ void syscall_interrupt_handler() {
 
 void timer_interrupt_handler() {
     timer_ticks++;
-
-    // Send End of Interrupt signal to PIC
     outb(PIC1_COMMAND, 0x20);
 }
 
