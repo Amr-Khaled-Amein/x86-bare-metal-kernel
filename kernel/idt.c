@@ -88,7 +88,7 @@ void idt_init() {
 
     idt_set_gate(32, (uint32_t) irq0, 0x08, 0x8E);
     idt_set_gate(33, (uint32_t) irq1, 0x08, 0x8E);
-    idt_set_gate(128, (uint32_t) isr128, 0x08, 0x8E);
+    idt_set_gate(128, (uint32_t) isr128, 0x08, 0xEE);
 
     idt_load((uint32_t) &idtp);
 
@@ -101,9 +101,36 @@ void trigger_syscall_interrupt() {
     __asm__ volatile ("int $0x80");
 }
 
-void syscall_interrupt_handler() {
-    print("Interrupt 0x80 received by the kernel.\n");
-    print("This demonstrates real IDT-based software interrupt handling.\n");
+static unsigned int syscall_count = 0;
+static int printed_ring3_proof = 0;
+
+void syscall_interrupt_handler(unsigned int *registers) {
+    unsigned int syscall_number = registers[7]; // EAX from pusha
+    unsigned int cs = registers[9];             // CS pushed by CPU during int 0x80
+
+    syscall_count++;
+
+    if (!printed_ring3_proof) {
+        if ((cs & 3) == 3) {
+            print("Syscall came from ring 3 user mode.\n");
+        } else {
+            print("Syscall came from ring 0 kernel mode.\n");
+        }
+
+        printed_ring3_proof = 1;
+    }
+
+    if (syscall_number == 1) {
+        return;
+    }
+
+    print("Unknown syscall: ");
+    print_decimal(syscall_number);
+    print("\n");
+}
+
+unsigned int get_syscall_count() {
+    return syscall_count;
 }
 
 unsigned int timer_interrupt_handler(unsigned int current_esp) {

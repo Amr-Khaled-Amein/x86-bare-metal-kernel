@@ -5,11 +5,13 @@
 #include "idt.h"
 #include "minifs.h"
 #include "process.h"
+#include "gdt.h"
 
 void kernel_main() {
     clear_screen();
     heap_init();
     minifs_init();
+    gdt_init();
     idt_init();
     process_init();
 
@@ -32,6 +34,7 @@ void kernel_main() {
     print("MiniFS: In-memory file system initialized\n");
     print("Scrollback: Page Up / Page Down enabled\n");
     print("Process Manager: Process table initialized\n");
+    print("GDT/TSS: Ring 3 preparation initialized\n");
     print("\n");
     print("----------------------------------------\n");
     print("System initialization complete.\n");

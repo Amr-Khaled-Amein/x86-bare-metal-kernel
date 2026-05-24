@@ -7,6 +7,8 @@
 
 typedef unsigned int uint32_t;
 
+extern void user_task_entry();
+
 typedef enum {
     PROCESS_READY,
     PROCESS_RUNNING,
@@ -30,6 +32,7 @@ typedef struct {
 
 static process_t processes[MAX_PROCESSES];
 static unsigned char process_stacks[MAX_PROCESSES][STACK_SIZE];
+static unsigned char user_stacks[MAX_PROCESSES][STACK_SIZE];
 static unsigned int next_pid = 1;
 static int scheduler_enabled = 0;
 static int current_process_index = -1;
@@ -241,22 +244,22 @@ void process_exit_trap() {
     }
 }
 
-uint32_t create_initial_stack(int index, void (*entry_point)()) {
+uint32_t create_initial_stack(int index, void (*entry_point)(), int user_mode) {
     uint32_t *stack = (uint32_t *) (process_stacks[index] + STACK_SIZE);
 
-    /*
-        This stack must match what irq0 restores:
+    if (user_mode) {
+        uint32_t user_stack_top = (uint32_t) (user_stacks[index] + STACK_SIZE);
 
-        popa restores:
-            EDI, ESI, EBP, ignored ESP, EBX, EDX, ECX, EAX
-
-        iret restores:
-            EIP, CS, EFLAGS
-    */
-
-    *(--stack) = 0x202;                  // EFLAGS: interrupts enabled
-    *(--stack) = 0x08;                   // CS: kernel code segment
-    *(--stack) = (uint32_t) entry_point; // EIP: task entry point
+        *(--stack) = 0x23;                  // User SS
+        *(--stack) = user_stack_top;        // User ESP
+        *(--stack) = 0x202;                 // EFLAGS
+        *(--stack) = 0x1B;                  // User CS
+        *(--stack) = (uint32_t) entry_point;// User EIP
+    } else {
+        *(--stack) = 0x202;                 // EFLAGS
+        *(--stack) = 0x08;                  // Kernel CS
+        *(--stack) = (uint32_t) entry_point;// Kernel EIP
+    }
 
     *(--stack) = 0; // EAX
     *(--stack) = 0; // ECX
@@ -292,6 +295,7 @@ void process_init() {
 void process_run(const char *name) {
     void (*entry_point)() = 0;
     unsigned int priority = 1;
+    int user_mode = 0;
 
     if (process_string_equals(name, "counter")) {
         entry_point = task_counter;
@@ -305,8 +309,13 @@ void process_run(const char *name) {
         entry_point = task_worker;
         priority = 3;
     }
+    else if (process_string_equals(name, "user")) {
+        entry_point = user_task_entry;
+        priority = 2;
+        user_mode = 1;
+    }
     else {
-        print("Unknown process type. Use: run counter, run logger, or run worker\n");
+        print("Unknown process type. Use: run counter, run logger, run worker, or run user\n");
         return;
     }
 
@@ -322,7 +331,7 @@ void process_run(const char *name) {
     processes[slot].counter = 0;
     processes[slot].runs = 0;
     processes[slot].priority = priority;
-    processes[slot].esp = create_initial_stack(slot, entry_point);
+    processes[slot].esp = create_initial_stack(slot, entry_point, user_mode);
 
     process_copy_name(processes[slot].name, name);
 
@@ -468,7 +477,7 @@ void process_scheduler_status() {
         print("State: stopped\n");
     }
 
-    print("Scheduling method: preemptive round-robin\n");
+    print("Scheduling method: priority-based preemptive scheduling\n");
     print("Context switch source: PIT timer IRQ0\n");
     print("Register saving: assembly pusha/popa\n");
     print("Task stacks: isolated per-process kernel stacks\n");

@@ -14,7 +14,12 @@ idt_load:
 
 isr128:
     pusha
+
+    mov eax, esp
+    push eax
     call syscall_interrupt_handler
+    add esp, 4
+
     popa
     iret
 

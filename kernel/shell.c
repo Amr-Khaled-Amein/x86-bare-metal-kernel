@@ -165,6 +165,8 @@ void shell_handle_command(const char *command) {
         print("run NAME         - Start process: counter or logger\n");
         print("kill PID         - Kill process by PID\n");
         print("run worker       - Start worker process\n");
+        print("run user         - Start ring 3 user-mode process\n");
+        print("syscalls         - Show syscall count\n");
         print("starttasks       - Start preemptive PIT scheduler\n");
         print("stoptasks        - Stop preemptive scheduler\n");
         print("schedstat        - Show scheduler status\n");
@@ -299,6 +301,11 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "semstat")) {
         process_sem_status();
+    }
+    else if (string_equals(command, "syscalls")) {
+        print("Total syscalls handled: ");
+        print_number(get_syscall_count());
+        print("\n");
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing

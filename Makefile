@@ -13,6 +13,9 @@ build/boot.o: boot/boot.asm
 build/interrupt_stubs.o: kernel/interrupt_stubs.asm
 	$(ASM) -f elf32 kernel/interrupt_stubs.asm -o build/interrupt_stubs.o
 
+build/gdt_flush.o: kernel/gdt_flush.asm
+	$(ASM) -f elf32 kernel/gdt_flush.asm -o build/gdt_flush.o
+
 build/kernel.o: kernel/kernel.c
 	$(CC) $(CFLAGS) -c kernel/kernel.c -o build/kernel.o
 
@@ -52,8 +55,14 @@ build/minifs.o: kernel/minifs.c
 build/process.o: kernel/process.c
 	$(CC) $(CFLAGS) -c kernel/process.c -o build/process.o
 
-build/kernel.bin: build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o build/process.o
-	$(LD) $(LDFLAGS) build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o build/process.o -o build/kernel.bin
+build/gdt.o: kernel/gdt.c
+	$(CC) $(CFLAGS) -c kernel/gdt.c -o build/gdt.o
+
+build/user_task.o: kernel/user_task.asm
+	$(ASM) -f elf32 kernel/user_task.asm -o build/user_task.o
+
+build/kernel.bin: build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o build/process.o build/gdt.o build/gdt_flush.o build/user_task.o
+	$(LD) $(LDFLAGS) build/boot.o build/interrupt_stubs.o build/kernel.o build/vga.o build/ports.o build/keyboard.o build/shell.o build/memory.o build/os_concepts.o build/heap.o build/idt.o build/text_buffer.o build/history.o build/minifs.o build/process.o build/gdt.o build/gdt_flush.o build/user_task.o -o build/kernel.bin
 
 run: all
 	qemu-system-i386 -kernel build/kernel.bin
