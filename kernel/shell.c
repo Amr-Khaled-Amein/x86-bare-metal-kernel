@@ -165,8 +165,8 @@ void shell_handle_command(const char *command) {
         print("run NAME         - Start process: counter or logger\n");
         print("kill PID         - Kill process by PID\n");
         print("run worker       - Start worker process\n");
-        print("starttasks       - Start cooperative scheduler\n");
-        print("stoptasks        - Stop cooperative scheduler\n");
+        print("starttasks       - Start preemptive PIT scheduler\n");
+        print("stoptasks        - Stop preemptive scheduler\n");
         print("schedstat        - Show scheduler status\n");
     }
     else if (string_equals(command, "clear")) {

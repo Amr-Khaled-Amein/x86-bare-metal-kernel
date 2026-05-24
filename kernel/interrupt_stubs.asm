@@ -20,7 +20,14 @@ isr128:
 
 irq0:
     pusha
+
+    mov eax, esp
+    push eax
     call timer_interrupt_handler
+    add esp, 4
+
+    mov esp, eax
+
     popa
     iret
 

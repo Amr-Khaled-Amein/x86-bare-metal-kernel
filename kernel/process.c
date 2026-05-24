@@ -3,20 +3,36 @@
 
 #define MAX_PROCESSES 8
 #define NAME_LENGTH 16
+#define STACK_SIZE 4096
+
+typedef unsigned int uint32_t;
+
+typedef enum {
+    PROCESS_READY,
+    PROCESS_RUNNING,
+    PROCESS_KILLED
+} process_state_t;
 
 typedef struct {
     unsigned int pid;
     char name[NAME_LENGTH];
-    int active;
+    process_state_t state;
+
+    uint32_t esp;
+    uint32_t stack_bottom;
+    uint32_t stack_top;
+
     unsigned int counter;
     unsigned int runs;
 } process_t;
 
 static process_t processes[MAX_PROCESSES];
+static unsigned char process_stacks[MAX_PROCESSES][STACK_SIZE];
+static int last_running_process_index = -1;
 static unsigned int next_pid = 1;
-
 static int scheduler_enabled = 0;
 static int current_process_index = -1;
+static unsigned int kernel_esp = 0;
 
 void process_copy_name(char *dest, const char *src) {
     int i = 0;
@@ -59,6 +75,22 @@ void process_print_number(unsigned int value) {
 
     for (int j = i - 1; j >= 0; j--) {
         print_char(buffer[j]);
+    }
+}
+
+void process_print_hex_digit(unsigned int digit) {
+    if (digit < 10) {
+        print_char('0' + digit);
+    } else {
+        print_char('A' + digit - 10);
+    }
+}
+
+void process_print_hex(unsigned int value) {
+    print("0x");
+
+    for (int i = 28; i >= 0; i -= 4) {
+        process_print_hex_digit((value >> i) & 0xF);
     }
 }
 
@@ -113,11 +145,26 @@ void print_padded_number_process(unsigned int value, int width) {
     }
 }
 
-int find_next_active_process(int start_index) {
+int find_free_process_slot() {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i].state == PROCESS_KILLED) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+int find_next_ready_process(int start_index) {
     for (int offset = 1; offset <= MAX_PROCESSES; offset++) {
         int index = (start_index + offset) % MAX_PROCESSES;
 
-        if (processes[index].active) {
+        if (index < 0) {
+            index += MAX_PROCESSES;
+        }
+
+        if (processes[index].state == PROCESS_READY ||
+            processes[index].state == PROCESS_RUNNING) {
             return index;
         }
     }
@@ -125,52 +172,145 @@ int find_next_active_process(int start_index) {
     return -1;
 }
 
+void task_counter() {
+    volatile unsigned int local = 0;
+
+    while (1) {
+        local++;
+
+        if (local % 1000000 == 0) {
+            if (current_process_index >= 0) {
+                processes[current_process_index].counter++;
+            }
+        }
+    }
+}
+
+void task_logger() {
+    volatile unsigned int local = 0;
+
+    while (1) {
+        local++;
+
+        if (local % 1000000 == 0) {
+            if (current_process_index >= 0) {
+                processes[current_process_index].counter += 2;
+            }
+        }
+    }
+}
+
+void task_worker() {
+    volatile unsigned int local = 0;
+
+    while (1) {
+        local++;
+
+        if (local % 1000000 == 0) {
+            if (current_process_index >= 0) {
+                processes[current_process_index].counter += 5;
+            }
+        }
+    }
+}
+
+void process_exit_trap() {
+    while (1) {
+    }
+}
+
+uint32_t create_initial_stack(int index, void (*entry_point)()) {
+    uint32_t *stack = (uint32_t *) (process_stacks[index] + STACK_SIZE);
+
+    /*
+        This stack must match what irq0 restores:
+
+        popa restores:
+            EDI, ESI, EBP, ignored ESP, EBX, EDX, ECX, EAX
+
+        iret restores:
+            EIP, CS, EFLAGS
+    */
+
+    *(--stack) = 0x202;                  // EFLAGS: interrupts enabled
+    *(--stack) = 0x08;                   // CS: kernel code segment
+    *(--stack) = (uint32_t) entry_point; // EIP: task entry point
+
+    *(--stack) = 0; // EAX
+    *(--stack) = 0; // ECX
+    *(--stack) = 0; // EDX
+    *(--stack) = 0; // EBX
+    *(--stack) = 0; // Original ESP placeholder
+    *(--stack) = 0; // EBP
+    *(--stack) = 0; // ESI
+    *(--stack) = 0; // EDI
+
+    return (uint32_t) stack;
+}
+
 void process_init() {
     for (int i = 0; i < MAX_PROCESSES; i++) {
         processes[i].pid = 0;
-        processes[i].active = 0;
+        processes[i].name[0] = '\0';
+        processes[i].state = PROCESS_KILLED;
+        processes[i].esp = 0;
+        processes[i].stack_bottom = (uint32_t) &process_stacks[i][0];
+        processes[i].stack_top = (uint32_t) (&process_stacks[i][STACK_SIZE]);
         processes[i].counter = 0;
         processes[i].runs = 0;
-        processes[i].name[0] = '\0';
     }
 
     next_pid = 1;
     scheduler_enabled = 0;
     current_process_index = -1;
+    last_running_process_index = -1;
 }
 
 void process_run(const char *name) {
-    if (!process_string_equals(name, "counter") &&
-        !process_string_equals(name, "logger") &&
-        !process_string_equals(name, "worker")) {
+    void (*entry_point)() = 0;
+
+    if (process_string_equals(name, "counter")) {
+        entry_point = task_counter;
+    }
+    else if (process_string_equals(name, "logger")) {
+        entry_point = task_logger;
+    }
+    else if (process_string_equals(name, "worker")) {
+        entry_point = task_worker;
+    }
+    else {
         print("Unknown process type. Use: run counter, run logger, or run worker\n");
         return;
     }
 
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (!processes[i].active) {
-            processes[i].pid = next_pid;
-            processes[i].active = 1;
-            processes[i].counter = 0;
-            processes[i].runs = 0;
-            process_copy_name(processes[i].name, name);
+    int slot = find_free_process_slot();
 
-            print("Started process ");
-            process_print_number(next_pid);
-            print(": ");
-            print(name);
-            print("\n");
-
-            if (current_process_index == -1) {
-                current_process_index = i;
-            }
-
-            next_pid++;
-            return;
-        }
+    if (slot == -1) {
+        print("Process table is full.\n");
+        return;
     }
 
-    print("Process table is full.\n");
+    processes[slot].pid = next_pid;
+    processes[slot].state = PROCESS_READY;
+    processes[slot].counter = 0;
+    processes[slot].runs = 0;
+    processes[slot].esp = create_initial_stack(slot, entry_point);
+
+    process_copy_name(processes[slot].name, name);
+
+    print("Started process ");
+    process_print_number(next_pid);
+    print(": ");
+    print(name);
+    print("\n");
+
+    print("Stack top: ");
+    process_print_hex(processes[slot].stack_top);
+    print(", initial ESP: ");
+    process_print_hex(processes[slot].esp);
+    print("\n");
+
+    next_pid++;
 }
 
 void process_list() {
@@ -180,12 +320,12 @@ void process_list() {
     print("----------------------------------------------\n");
 
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i].active) {
+        if (processes[i].state != PROCESS_KILLED) {
             print_padded_number_process(processes[i].pid, 6);
             print_padded_text_process(processes[i].name, 12);
 
-            if (scheduler_enabled && i == current_process_index) {
-                print_padded_text_process("running", 11);
+            if (scheduler_enabled && i == last_running_process_index) {
+                print_padded_text_process("last-run", 11);
             } else {
                 print_padded_text_process("ready", 11);
             }
@@ -205,11 +345,11 @@ void process_list() {
 
 void process_kill(unsigned int pid) {
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i].active && processes[i].pid == pid) {
-            processes[i].active = 0;
+        if (processes[i].state != PROCESS_KILLED && processes[i].pid == pid) {
+            processes[i].state = PROCESS_KILLED;
 
             if (current_process_index == i) {
-                current_process_index = find_next_active_process(i);
+                current_process_index = find_next_ready_process(i);
             }
 
             print("Killed process ");
@@ -224,38 +364,46 @@ void process_kill(unsigned int pid) {
     print("\n");
 }
 
-void run_process_behavior(process_t *process) {
-    process->runs++;
-
-    if (process_string_equals(process->name, "counter")) {
-        process->counter += 1;
-    }
-    else if (process_string_equals(process->name, "logger")) {
-        process->counter += 2;
-    }
-    else if (process_string_equals(process->name, "worker")) {
-        process->counter += 5;
-    }
-}
-
-void process_tick() {
+unsigned int process_schedule(unsigned int current_esp) {
     if (!scheduler_enabled) {
-        return;
+        return current_esp;
     }
 
     if (current_process_index == -1) {
-        current_process_index = find_next_active_process(0);
-        return;
+        kernel_esp = current_esp;
+    } else if (processes[current_process_index].state != PROCESS_KILLED) {
+        processes[current_process_index].esp = current_esp;
+        processes[current_process_index].state = PROCESS_READY;
     }
 
-    if (!processes[current_process_index].active) {
-        current_process_index = find_next_active_process(current_process_index);
-        return;
+    int next_process = find_next_ready_process(current_process_index);
+
+    if (next_process == -1) {
+        current_process_index = -1;
+
+        if (kernel_esp != 0) {
+            return kernel_esp;
+        }
+
+        return current_esp;
     }
 
-    run_process_behavior(&processes[current_process_index]);
+    if (current_process_index != -1 && next_process <= current_process_index) {
+        current_process_index = -1;
 
-    current_process_index = find_next_active_process(current_process_index);
+        if (kernel_esp != 0) {
+            return kernel_esp;
+        }
+
+        return current_esp;
+    }
+
+    current_process_index = next_process;
+    last_running_process_index = next_process;
+    processes[current_process_index].state = PROCESS_RUNNING;
+    processes[current_process_index].runs++;
+
+    return processes[current_process_index].esp;
 }
 
 void process_start_scheduler() {
@@ -264,23 +412,18 @@ void process_start_scheduler() {
         return;
     }
 
-    if (find_next_active_process(0) == -1) {
+    if (find_next_ready_process(-1) == -1) {
         print("No active processes to schedule.\n");
         return;
     }
 
     scheduler_enabled = 1;
+    current_process_index = -1;
+    last_running_process_index = -1;
+    kernel_esp = 0;
 
-    if (current_process_index == -1 || !processes[current_process_index].active) {
-        current_process_index = find_next_active_process(0);
-    }
-
-    print("Cooperative scheduler started.\n");
-}
-
-void process_stop_scheduler() {
-    scheduler_enabled = 0;
-    print("Cooperative scheduler stopped.\n");
+    print("Preemptive scheduler started.\n");
+    print("PIT timer will now force task switches automatically.\n");
 }
 
 void process_scheduler_status() {
@@ -292,15 +435,30 @@ void process_scheduler_status() {
         print("State: stopped\n");
     }
 
-    if (current_process_index != -1 && processes[current_process_index].active) {
+    print("Scheduling method: preemptive round-robin\n");
+    print("Context switch source: PIT timer IRQ0\n");
+    print("Register saving: assembly pusha/popa\n");
+    print("Task stacks: isolated per-process kernel stacks\n");
+
+    if (current_process_index != -1 &&
+        processes[current_process_index].state != PROCESS_KILLED) {
         print("Current process: ");
         process_print_number(processes[current_process_index].pid);
         print(" (");
         print(processes[current_process_index].name);
         print(")\n");
+
+        print("Current ESP: ");
+        process_print_hex(processes[current_process_index].esp);
+        print("\n");
     } else {
         print("Current process: none\n");
     }
+}
 
-    print("Scheduling method: round-robin over active process table\n");
+void process_stop_scheduler() {
+    scheduler_enabled = 0;
+    current_process_index = -1;
+
+    print("Preemptive scheduler stopped.\n");
 }

@@ -106,14 +106,12 @@ void syscall_interrupt_handler() {
     print("This demonstrates real IDT-based software interrupt handling.\n");
 }
 
-void timer_interrupt_handler() {
+unsigned int timer_interrupt_handler(unsigned int current_esp) {
     timer_ticks++;
 
-    if (timer_ticks % 100 == 0) {
-        process_tick();
-    }
-
     outb(PIC1_COMMAND, 0x20);
+
+    return process_schedule(current_esp);
 }
 
 unsigned int get_timer_ticks() {
