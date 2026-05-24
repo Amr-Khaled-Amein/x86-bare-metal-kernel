@@ -10,6 +10,7 @@ typedef unsigned int uint32_t;
 typedef enum {
     PROCESS_READY,
     PROCESS_RUNNING,
+    PROCESS_BLOCKED,
     PROCESS_KILLED
 } process_state_t;
 
@@ -22,6 +23,7 @@ typedef struct {
     uint32_t stack_bottom;
     uint32_t stack_top;
 
+    unsigned int priority;
     unsigned int counter;
     unsigned int runs;
 } process_t;
@@ -156,6 +158,22 @@ int find_free_process_slot() {
 }
 
 int find_next_ready_process(int start_index) {
+    int best_index = -1;
+    unsigned int best_priority = 0;
+
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i].state == PROCESS_READY ||
+            processes[i].state == PROCESS_RUNNING) {
+            if (processes[i].priority > best_priority) {
+                best_priority = processes[i].priority;
+            }
+        }
+    }
+
+    if (best_priority == 0) {
+        return -1;
+    }
+
     for (int offset = 1; offset <= MAX_PROCESSES; offset++) {
         int index = (start_index + offset) % MAX_PROCESSES;
 
@@ -163,13 +181,15 @@ int find_next_ready_process(int start_index) {
             index += MAX_PROCESSES;
         }
 
-        if (processes[index].state == PROCESS_READY ||
-            processes[index].state == PROCESS_RUNNING) {
-            return index;
+        if ((processes[index].state == PROCESS_READY ||
+             processes[index].state == PROCESS_RUNNING) &&
+             processes[index].priority == best_priority) {
+            best_index = index;
+            break;
         }
     }
 
-    return -1;
+    return best_index;
 }
 
 void task_counter() {
@@ -256,6 +276,7 @@ void process_init() {
         processes[i].esp = 0;
         processes[i].stack_bottom = (uint32_t) &process_stacks[i][0];
         processes[i].stack_top = (uint32_t) (&process_stacks[i][STACK_SIZE]);
+        processes[i].priority = 0;
         processes[i].counter = 0;
         processes[i].runs = 0;
     }
@@ -268,15 +289,19 @@ void process_init() {
 
 void process_run(const char *name) {
     void (*entry_point)() = 0;
+    unsigned int priority = 1;
 
     if (process_string_equals(name, "counter")) {
         entry_point = task_counter;
+        priority = 1;
     }
     else if (process_string_equals(name, "logger")) {
         entry_point = task_logger;
+        priority = 2;
     }
     else if (process_string_equals(name, "worker")) {
         entry_point = task_worker;
+        priority = 3;
     }
     else {
         print("Unknown process type. Use: run counter, run logger, or run worker\n");
@@ -294,6 +319,7 @@ void process_run(const char *name) {
     processes[slot].state = PROCESS_READY;
     processes[slot].counter = 0;
     processes[slot].runs = 0;
+    processes[slot].priority = priority;
     processes[slot].esp = create_initial_stack(slot, entry_point);
 
     process_copy_name(processes[slot].name, name);
@@ -316,17 +342,22 @@ void process_run(const char *name) {
 void process_list() {
     int found = 0;
 
-    print("PID   NAME        STATE      RUNS      COUNTER\n");
-    print("----------------------------------------------\n");
+    print("PID   NAME        PRIO   STATE      RUNS      COUNTER\n");
+    print("-----------------------------------------------------\n");
 
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (processes[i].state != PROCESS_KILLED) {
             print_padded_number_process(processes[i].pid, 6);
             print_padded_text_process(processes[i].name, 12);
+            print_padded_number_process(processes[i].priority, 7);
 
-            if (scheduler_enabled && i == last_running_process_index) {
+            if (processes[i].state == PROCESS_BLOCKED) {
+                print_padded_text_process("blocked", 11);
+            }
+            else if (scheduler_enabled && i == last_running_process_index) {
                 print_padded_text_process("last-run", 11);
-            } else {
+            }
+            else {
                 print_padded_text_process("ready", 11);
             }
 
