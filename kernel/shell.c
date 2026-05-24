@@ -168,6 +168,9 @@ void shell_handle_command(const char *command) {
         print("starttasks       - Start preemptive PIT scheduler\n");
         print("stoptasks        - Stop preemptive scheduler\n");
         print("schedstat        - Show scheduler status\n");
+        print("semwait PID      - Block/acquire semaphore by process PID\n");
+        print("semsignal        - Signal semaphore and wake blocked process\n");
+        print("semstat          - Show semaphore status\n");
     }
     else if (string_equals(command, "clear")) {
         clear_screen();
@@ -286,6 +289,16 @@ void shell_handle_command(const char *command) {
     }
     else if (string_equals(command, "schedstat")) {
         process_scheduler_status();
+    }
+    else if (starts_with(command, "semwait ")) {
+        unsigned int pid = parse_number(command + 8);
+        process_sem_wait(pid);
+    }
+    else if (string_equals(command, "semsignal")) {
+        process_sem_signal();
+    }
+    else if (string_equals(command, "semstat")) {
+        process_sem_status();
     }
     else if (command[0] == '\0') {
         // Empty command: do nothing

@@ -9,5 +9,8 @@ unsigned int process_schedule(unsigned int current_esp);
 void process_start_scheduler();
 void process_stop_scheduler();
 void process_scheduler_status();
+void process_sem_wait(unsigned int pid);
+void process_sem_signal();
+void process_sem_status();
 
 #endif

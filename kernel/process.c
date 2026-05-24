@@ -30,11 +30,13 @@ typedef struct {
 
 static process_t processes[MAX_PROCESSES];
 static unsigned char process_stacks[MAX_PROCESSES][STACK_SIZE];
-static int last_running_process_index = -1;
 static unsigned int next_pid = 1;
 static int scheduler_enabled = 0;
 static int current_process_index = -1;
+static int last_running_process_index = -1;
 static unsigned int kernel_esp = 0;
+static int demo_semaphore_value = 1;
+static int demo_semaphore_waiting_pid = 0;
 
 void process_copy_name(char *dest, const char *src) {
     int i = 0;
@@ -492,4 +494,92 @@ void process_stop_scheduler() {
     current_process_index = -1;
 
     print("Preemptive scheduler stopped.\n");
+}
+
+void process_sem_wait(unsigned int pid) {
+    if (pid == 0) {
+        print("Usage: semwait PID\n");
+        return;
+    }
+
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i].state != PROCESS_KILLED && processes[i].pid == pid) {
+            if (demo_semaphore_value > 0) {
+                demo_semaphore_value--;
+
+                print("Semaphore acquired by process ");
+                process_print_number(pid);
+                print(".\n");
+                return;
+            }
+
+            processes[i].state = PROCESS_BLOCKED;
+            demo_semaphore_waiting_pid = pid;
+
+            if (current_process_index == i) {
+                current_process_index = -1;
+            }
+
+            if (last_running_process_index == i) {
+                last_running_process_index = -1;
+            }
+
+            print("Process ");
+            process_print_number(pid);
+            print(" blocked on semaphore.\n");
+            return;
+        }
+    }
+
+    print("Process not found: ");
+    process_print_number(pid);
+    print("\n");
+}
+
+void process_sem_signal() {
+    int best_index = -1;
+    unsigned int best_priority = 0;
+
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i].state == PROCESS_BLOCKED) {
+            if (processes[i].priority > best_priority) {
+                best_priority = processes[i].priority;
+                best_index = i;
+            }
+        }
+    }
+
+    if (best_index == -1) {
+        demo_semaphore_value++;
+        print("Semaphore signaled. No blocked process was waiting.\n");
+        return;
+    }
+
+    processes[best_index].state = PROCESS_READY;
+    demo_semaphore_waiting_pid = 0;
+
+    print("Woke highest-priority blocked process ");
+    process_print_number(processes[best_index].pid);
+    print(" from semaphore.\n");
+
+    print("Priority: ");
+    process_print_number(processes[best_index].priority);
+    print("\n");
+}
+
+void process_sem_status() {
+    print("Semaphore status:\n");
+
+    print("Value: ");
+    process_print_number(demo_semaphore_value);
+    print("\n");
+
+    print("Waiting PID: ");
+
+    if (demo_semaphore_waiting_pid == 0) {
+        print("none\n");
+    } else {
+        process_print_number(demo_semaphore_waiting_pid);
+        print("\n");
+    }
 }
