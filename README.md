@@ -154,8 +154,8 @@ sudo apt install build-essential gcc-multilib nasm qemu-system-x86
 ### Build and run
 
 ```sh
-git clone https://github.com/Amr-Khaled-Amein/x86-Bare-Metal-Kernel.git
-cd x86-Bare-Metal-Kernel
+git clone https://github.com/Amr-Khaled-Amein/x86-bare-metal-kernel.git
+cd x86-bare-metal-kernel
 make run        # builds build/kernel.bin and boots it in QEMU
 ```
 
