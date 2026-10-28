@@ -5,6 +5,9 @@ LD = ld
 CFLAGS = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -nostdinc -Ikernel
 LDFLAGS = -m elf_i386 -T linker.ld
 
+# Make sure the output directory exists on a fresh clone
+$(shell mkdir -p build)
+
 all: build/kernel.bin
 
 build/boot.o: boot/boot.asm
@@ -69,3 +72,5 @@ run: all
 
 clean:
 	rm -f build/*.o build/*.bin
+
+.PHONY: all run clean
